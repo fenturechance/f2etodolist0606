@@ -1,0 +1,8 @@
+.firebaserc
+yarn.lock
+functions/node_modules
+functions/package-lock.json
+functions/env.js
+public/node_modules
+public/yarn.lock
+public/package-lock.json

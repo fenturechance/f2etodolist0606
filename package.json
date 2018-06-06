@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "firebase": "^5.0.4"
+  }
+}
