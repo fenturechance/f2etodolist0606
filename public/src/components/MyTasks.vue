@@ -9,18 +9,17 @@
             :now-condition.sync="nowCondition"
             :edit-data.sync="editData"
             :empty-edit-data="emptyEditData"
-            :edit-key.sync="editKey"
             :task-list.sync="taskList"
             @updateList="fetchTaskList"
             @changeFilter="changeFilter"
         ></AddTodoItem>
         <div class="taskList">
-            <ul>
-                <li v-for="(task,key) in filterTaskList" class="titleGroup"
+            <draggable v-model="filterTaskList" element="ul">
+                <li v-for="task in filterTaskList" class="titleGroup"
                     :class="$store.getters.titleCollectStyle(task)"
-                    v-if="key != editKey">
+                    v-if="task.key != editData.key">
                     <div class="inputGroup">
-                        <label class="checkBox" :class="{ active : task.done }" @change="toggleFun(task , key , 'done')">
+                        <label class="checkBox" :class="{ active : task.done }" @change="toggleFun(task , 'done')" >
                             <input type="checkbox" style="display:none">
                             <i class="fa fa-check"></i>
                         </label>
@@ -41,16 +40,16 @@
                         </div>
                     </div>
                     <div class="controlGroup">
-                        <div class="star" @click="toggleFun(task , key , 'collected')">
+                        <div class="star" @click="toggleFun(task , 'collected')">
                             <i class="fas fa-star" v-if="task.collected"></i>
                             <i class="far fa-star" v-else></i>
                         </div>
-                        <div class="edit" @click="editFun(task , key)">
+                        <div class="edit" @click="editFun(task)">
                             <i class="fa fa-pencil-alt" aria-hidden="true"></i>
                         </div>
                     </div>
                 </li>
-            </ul>
+            </draggable>
         </div>
         <div class="leftTask">
             <p>{{ leftWord }}</p>
@@ -63,11 +62,10 @@
     export default {
         data() {
             return{
-                taskList: {},
-                filterTaskList : {},
+                taskList: [],
+                filterTaskList : [],
                 nowCondition: 'show',
                 editData: {},
-                editKey : '',
                 emptyEditData: {
                     name : "",
                     done : false,
@@ -75,7 +73,8 @@
                     time : "",
                     date : '',
                     file : "",
-                    comment : ""
+                    comment : "",
+                    key : ''
                 },
             }
         },
@@ -110,7 +109,7 @@
                     default:
                         break;
                 }
-            }
+            },
         },
         components: {
             AddTodoItem
@@ -122,8 +121,14 @@
         methods: {
             fetchTaskList() {
                 axios.get('/show').then( rs => {
-                    this.taskList = { ...rs.data };
-                    this.filterTaskList = { ...rs.data };
+                    let arr = [];
+                    for (const key in rs.data) {
+                        let task = rs.data[key];
+                        task.key = key;
+                        arr.push(task);
+                    }
+                    this.taskList = arr;
+                    this.filterTaskList = arr;
                     this.$store.state.loading = false;
                     this.changeFilter();
                 });
@@ -132,15 +137,19 @@
                 this.nowCondition = 'create';
                 this.editData = { ...this.emptyEditData };
             },
-            editFun(task , key) {
+            editFun(task) {
                 this.nowCondition = 'edit';
                 this.editData = { ...task };
-                this.editKey = key;
             },
-            toggleFun: _.debounce(function(task , key , change) {
-                this.taskList[key][change] = !this.taskList[key][change];
-                let sendData = { key };
-                sendData[change] = this.taskList[key][change];
+            toggleFun: _.debounce(function(task , change) {
+                let sendData = { key : task.key };
+                this.taskList = this.taskList.map(otask => {
+                    if(otask.key == task.key){
+                        otask[change] = !otask[change];
+                        sendData[change] = otask[change];
+                    }
+                    return otask;
+                })
                 axios.put('/modify',sendData).then(rs => {
                     // this.fetchTaskList();
                 });
@@ -150,32 +159,20 @@
                 let newList = {};
                 switch (this.nowTab) {
                     case 'MyTasks':
-                        this.filterTaskList = { ...this.taskList };
+                        this.filterTaskList = this.taskList;
                         break;
                     case 'InProgress':
-                        for (const key in this.taskList) {
-                            let task = this.taskList[key];
-                            if(!task.done){
-                                newList[key] = { ...task };
-                            }
-                        }
-                        this.filterTaskList = { ...newList };
+                        this.filterTaskList = this.taskList.filter(task => !task.done);
                         break;
                     case 'Completed':
-                        for (const key in this.taskList) {
-                            let task = this.taskList[key];
-                            if(task.done){
-                                newList[key] = { ...task };
-                            }
-                        }
-                        this.filterTaskList = { ...newList };
+                        this.filterTaskList = this.taskList.filter(task => task.done);
                         break;
                     default:
                         break;
                 }
             },
             testFuntion() {
-                this.taskList = {
+                let list = {
                     thing1 : {
                         name : 'task1',
                         done : true,
@@ -201,7 +198,14 @@
                         comment : '555666777'
                     },
                 };
-                this.filterTaskList = { ...this.taskList };
+                let arr = [];
+                for (const key in list) {
+                    let task = list[key];
+                    task.key = key;
+                    arr.push(task);
+                }
+                this.taskList = arr;
+                this.filterTaskList = arr;
                 this.$store.state.loading = false;
             }
         }

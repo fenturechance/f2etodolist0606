@@ -90,7 +90,7 @@
                 }
             }
         },
-        props: ['nowCondition','editData','emptyEditData','editKey','taskList'],
+        props: ['nowCondition','editData','emptyEditData','taskList'],
         computed: {
             actionText() {
                 return this.nowCondition == 'create' ? 'Add Task' : 'Save';
@@ -100,13 +100,9 @@
             cancelAdd() {
                 this.$emit('update:nowCondition','show');
                 this.$emit('update:editData',{ ...this.emptyEditdata });
-                this.$emit('update:editKey','');
             },
             submit() {
-                let editData = {
-                    ...this.editData,
-                    key : this.editKey
-                }
+                let editData = { ...this.editData }
                 let sendData = {
                     url : this.sendData[this.nowCondition].url,
                     method : this.sendData[this.nowCondition].method,
@@ -119,8 +115,12 @@
                         callbackFunction = () => this.$emit('updateList');
                         break;
                     case 'edit':
-                        let newTaskList = { ...this.taskList };
-                        newTaskList[this.editKey] = { ...this.editData };
+                        let newTaskList = this.taskList.map(task => {
+                            if(task.key == this.editData.key) {
+                                task = { ...this.editData };
+                            }
+                            return task;
+                        })
                         this.$emit('update:taskList',newTaskList);
                         this.$emit('changeFilter');
                         break;

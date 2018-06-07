@@ -2,6 +2,9 @@ import Vue from 'vue'
 import App from './App.vue'
 import Vuex from 'vuex'
 window.axios = require('axios');
+var draggable = require('vuedraggable');
+
+Vue.component('draggable',draggable);
 
 Vue.use(Vuex);
 
